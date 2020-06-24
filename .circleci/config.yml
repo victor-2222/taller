@@ -2,41 +2,46 @@
 #
 # Check https://circleci.com/docs/2.0/language-java/ for more details
 #
-version: 2
+version: 2.1
+
+parameters:
+  some_param:
+    description: The param triggered via API
+    type: boolean
+    default: false
+
 jobs:
-  build:
-    docker:
-      # specify the version you desire here
-      - image: circleci/openjdk:8-jdk
+  first_workflow_first_job:
+    ...
+  second_workflow_first_job:
+    ...
+  third_workflow_first_job:
+    ...
 
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/postgres:9.4
+workflows:
+  first_workflow:
+    unless: << pipeline.parameters.some_param >>
+    jobs:
+      - first_workflow_first_job
 
-    working_directory: ~/repo
+  second_workflow:
+    triggers:
+      - schedule:
+          cron: '45 0,2,4,6,8,10,12,14,16,18,20,22 * * *'
+          filters:
+            branches:
+              only:
+                - some-branch
+    jobs:
+      - second_workflow_first_job
 
-    environment:
-      # Customize the JVM maximum heap limit
-      JVM_OPTS: -Xmx3200m
-      TERM: dumb
-
-    steps:
-      - checkout
-
-      # Download and cache dependencies
-      - restore_cache:
-          keys:
-            - v1-dependencies-{{ checksum "build.gradle" }}
-            # fallback to using the latest cache if no exact match is found
-            - v1-dependencies-
-
-      - run: gradle dependencies
-
-      - save_cache:
-          paths:
-            - ~/.gradle
-          key: v1-dependencies-{{ checksum "build.gradle" }}
-
-      # run tests!
-      - run: gradle test
+  third_workflow:
+    triggers:
+      - schedule:
+          cron: '45 * * * *'
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - third_workflow_first_job
